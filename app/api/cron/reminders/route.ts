@@ -1,9 +1,8 @@
 import { bot } from "@/lib/bot";
 import { listEvents } from "@/lib/calendar";
+import { tomorrowRangeUtc, formatTimeInZone } from "@/lib/timezone";
 
-// Matches the cron schedule in vercel.json (every 10 min) so each event
-// falls into exactly one run's window instead of firing multiple reminders.
-const LOOKAHEAD_MINUTES = 10;
+const TIMEZONE = process.env.TIMEZONE || "UTC";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -16,23 +15,21 @@ export async function GET(request: Request) {
     return Response.json({ skipped: "TELEGRAM_CHAT_ID not set" });
   }
 
-  const now = new Date();
-  const soon = new Date(now.getTime() + LOOKAHEAD_MINUTES * 60_000);
-
-  const events = await listEvents({
-    timeMinISO: now.toISOString(),
-    timeMaxISO: soon.toISOString(),
-  });
+  const { startISO, endISO } = tomorrowRangeUtc(TIMEZONE);
+  const events = await listEvents({ timeMinISO: startISO, timeMaxISO: endISO });
 
   const threadId = await bot.getAdapter("telegram").openDM(chatId);
   const thread = bot.thread(threadId);
-  for (const event of events) {
-    await thread.post(
-      `Reminder: "${event.summary}" starts at ${event.start}${
-        event.location ? ` (${event.location})` : ""
-      }`,
-    );
+
+  if (events.length === 0) {
+    await thread.post("Nothing on your calendar tomorrow.");
+  } else {
+    const lines = events.map((event) => {
+      const time = event.start ? formatTimeInZone(event.start, TIMEZONE) : "?";
+      return `${time} — ${event.summary}${event.location ? ` (${event.location})` : ""}`;
+    });
+    await thread.post(`Tomorrow's schedule:\n${lines.join("\n")}`);
   }
 
-  return Response.json({ remindersSent: events.length });
+  return Response.json({ eventsSent: events.length });
 }
