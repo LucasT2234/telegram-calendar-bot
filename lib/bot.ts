@@ -13,16 +13,14 @@ export const bot = new Chat({
   logger: "debug",
 }).registerSingleton();
 
-bot.onDirectMessage(async (thread, message) => {
-  if (message.text?.trim() === "/start") {
-    await thread.post(
-      `Hi! I'm your calendar assistant. Chat ID: ${thread.id}\n\n` +
-        "Set that as TELEGRAM_CHAT_ID if you want me to send reminders. " +
-        "Just tell me things like \"lunch with Sam tomorrow 1pm\" or \"what's on my calendar this week?\".",
-    );
-    return;
-  }
+bot.onSlashCommand("/start", async (event) => {
+  await event.channel.post(
+    `Hi! I'm your calendar assistant. Your Telegram user ID (for TELEGRAM_CHAT_ID) is: ${event.user.userId}\n\n` +
+      "Just tell me things like \"lunch with Sam tomorrow 1pm\" or \"what's on my calendar this week?\".",
+  );
+});
 
+bot.onDirectMessage(async (thread, message) => {
   await thread.startTyping();
 
   const { messages: recent } = await thread.adapter.fetchMessages(thread.id, {
