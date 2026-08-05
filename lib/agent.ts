@@ -1,4 +1,5 @@
 import { ToolLoopAgent, isStepCount } from "ai";
+import { google } from "@ai-sdk/google";
 import {
   createEventTool,
   listEventsTool,
@@ -8,7 +9,9 @@ import {
 } from "./tools/calendar-tools";
 
 const TIMEZONE = process.env.TIMEZONE || "UTC";
-const MODEL = process.env.AGENT_MODEL || "anthropic/claude-sonnet-5";
+// Gemini has a genuinely free tier (Google AI Studio key), unlike Anthropic's
+// API — using it directly here avoids any per-message cost.
+const MODEL = google(process.env.AGENT_MODEL || "gemini-3.5-flash");
 
 function buildInstructions(): string {
   const now = new Date();
