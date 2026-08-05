@@ -23,20 +23,40 @@ bot.onSlashCommand("/start", async (event) => {
   );
 });
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out: ${label}`)), ms),
+    ),
+  ]);
+}
+
 bot.onDirectMessage(async (thread, message) => {
-  await thread.startTyping();
-
-  const { messages: recent } = await thread.adapter.fetchMessages(thread.id, {
-    limit: 20,
-  });
-  const history = await toAiMessages(recent);
-
   try {
+    console.log("[handler] start", { text: message.text });
+
+    await withTimeout(thread.startTyping(), 8_000, "startTyping");
+    console.log("[handler] typing sent");
+
+    const { messages: recent } = await withTimeout(
+      thread.adapter.fetchMessages(thread.id, { limit: 20 }),
+      8_000,
+      "fetchMessages",
+    );
+    console.log("[handler] fetched history", { count: recent.length });
+
+    const history = await toAiMessages(recent);
+    console.log("[handler] converted to ai messages", { count: history.length });
+
     const agent = createCalendarAgent();
     const result = await agent.generate({ messages: history, timeout: 25_000 });
+    console.log("[handler] agent done", { text: result.text });
+
     await thread.post(result.text || "Done.");
+    console.log("[handler] reply posted");
   } catch (error) {
-    console.error("Agent error:", error);
+    console.error("[handler] error:", error);
     await thread.post(
       "Something went wrong handling that — mind trying again?",
     );
