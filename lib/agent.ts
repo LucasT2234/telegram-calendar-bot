@@ -11,7 +11,7 @@ import {
 const TIMEZONE = process.env.TIMEZONE || "UTC";
 // Gemini has a genuinely free tier (Google AI Studio key), unlike Anthropic's
 // API — using it directly here avoids any per-message cost.
-const MODEL = google(process.env.AGENT_MODEL || "gemini-2.5-flash");
+const MODEL = google(process.env.AGENT_MODEL || "gemini-3.5-flash-lite");
 
 function buildInstructions(): string {
   const now = new Date();
