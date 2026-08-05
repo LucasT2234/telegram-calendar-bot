@@ -11,6 +11,9 @@ export const bot = new Chat({
   },
   state: createMemoryState(),
   logger: "debug",
+  // If a prior request on this thread hangs past its own timeout instead of
+  // releasing the lock cleanly, don't let it block the thread forever.
+  onLockConflict: "force",
 }).registerSingleton();
 
 bot.onSlashCommand("/start", async (event) => {
@@ -30,7 +33,7 @@ bot.onDirectMessage(async (thread, message) => {
 
   try {
     const agent = createCalendarAgent();
-    const result = await agent.generate({ messages: history });
+    const result = await agent.generate({ messages: history, timeout: 25_000 });
     await thread.post(result.text || "Done.");
   } catch (error) {
     console.error("Agent error:", error);
