@@ -1,0 +1,30 @@
+{
+  "name": "telegram-calendar-bot",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@chat-adapter/state-memory": "^4.36.0",
+    "@chat-adapter/telegram": "^4.36.0",
+    "ai": "^7.0.52",
+    "chat": "^4.36.0",
+    "googleapis": "^174.0.0",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.0",
+    "typescript": "^5"
+  }
+}
