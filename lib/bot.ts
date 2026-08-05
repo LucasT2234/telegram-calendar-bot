@@ -50,7 +50,7 @@ bot.onDirectMessage(async (thread, message) => {
     console.log("[handler] converted to ai messages", { count: history.length });
 
     const agent = createCalendarAgent();
-    const result = await agent.generate({ messages: history, timeout: 25_000 });
+    const result = await agent.generate({ messages: history, timeout: 55_000 });
     console.log("[handler] agent done", { text: result.text });
 
     await thread.post(result.text || "Done.");
