@@ -10,6 +10,7 @@ export const bot = new Chat({
     telegram: createTelegramAdapter(),
   },
   state: createMemoryState(),
+  logger: "debug",
 }).registerSingleton();
 
 bot.onDirectMessage(async (thread, message) => {
