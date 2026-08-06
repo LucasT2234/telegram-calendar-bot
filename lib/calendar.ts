@@ -3,14 +3,40 @@ import { google, calendar_v3 } from "googleapis";
 const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
 
 function getCalendarClient() {
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-  );
-  oauth2Client.setCredentials({
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+  console.log("[calendar] env check", {
+    clientIdLength: clientId?.length,
+    clientIdPrefix: clientId?.slice(0, 12),
+    clientIdSuffix: clientId?.slice(-20),
+    clientSecretLength: clientSecret?.length,
+    clientSecretPrefix: clientSecret?.slice(0, 6),
+    refreshTokenLength: refreshToken?.length,
+    refreshTokenPrefix: refreshToken?.slice(0, 6),
   });
+
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
   return google.calendar({ version: "v3", auth: oauth2Client });
+}
+
+async function withGoogleErrorLogging<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: unknown) {
+    const err = error as {
+      message?: string;
+      response?: { status?: number; data?: unknown };
+    };
+    console.error(`[calendar] ${label} failed`, {
+      message: err?.message,
+      status: err?.response?.status,
+      data: err?.response?.data,
+    });
+    throw error;
+  }
 }
 
 export interface EventInput {
@@ -44,18 +70,20 @@ function toSummary(event: calendar_v3.Schema$Event): EventSummary {
 }
 
 export async function createEvent(input: EventInput): Promise<EventSummary> {
-  const calendar = getCalendarClient();
-  const { data } = await calendar.events.insert({
-    calendarId: CALENDAR_ID,
-    requestBody: {
-      summary: input.summary,
-      description: input.description,
-      location: input.location,
-      start: { dateTime: input.startISO },
-      end: { dateTime: input.endISO },
-    },
+  return withGoogleErrorLogging("createEvent", async () => {
+    const calendar = getCalendarClient();
+    const { data } = await calendar.events.insert({
+      calendarId: CALENDAR_ID,
+      requestBody: {
+        summary: input.summary,
+        description: input.description,
+        location: input.location,
+        start: { dateTime: input.startISO },
+        end: { dateTime: input.endISO },
+      },
+    });
+    return toSummary(data);
   });
-  return toSummary(data);
 }
 
 export async function listEvents(params: {
@@ -63,16 +91,18 @@ export async function listEvents(params: {
   timeMaxISO: string;
   maxResults?: number;
 }): Promise<EventSummary[]> {
-  const calendar = getCalendarClient();
-  const { data } = await calendar.events.list({
-    calendarId: CALENDAR_ID,
-    timeMin: params.timeMinISO,
-    timeMax: params.timeMaxISO,
-    singleEvents: true,
-    orderBy: "startTime",
-    maxResults: params.maxResults ?? 20,
+  return withGoogleErrorLogging("listEvents", async () => {
+    const calendar = getCalendarClient();
+    const { data } = await calendar.events.list({
+      calendarId: CALENDAR_ID,
+      timeMin: params.timeMinISO,
+      timeMax: params.timeMaxISO,
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: params.maxResults ?? 20,
+    });
+    return (data.items ?? []).map(toSummary);
   });
-  return (data.items ?? []).map(toSummary);
 }
 
 export async function deleteEvent(eventId: string): Promise<void> {
