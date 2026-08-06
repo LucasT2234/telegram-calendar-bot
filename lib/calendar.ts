@@ -3,19 +3,11 @@ import { google, calendar_v3 } from "googleapis";
 const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
 
 function getCalendarClient() {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-
-  console.log("[calendar] env check", {
-    clientIdLength: clientId?.length,
-    clientIdPrefix: clientId?.slice(0, 12),
-    clientIdSuffix: clientId?.slice(-20),
-    clientSecretLength: clientSecret?.length,
-    clientSecretPrefix: clientSecret?.slice(0, 6),
-    refreshTokenLength: refreshToken?.length,
-    refreshTokenPrefix: refreshToken?.slice(0, 6),
-  });
+  // Trim defensively — env values pasted through a dashboard UI can pick up
+  // a trailing newline, which silently breaks OAuth ("invalid_client").
+  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN?.trim();
 
   const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
   oauth2Client.setCredentials({ refresh_token: refreshToken });
