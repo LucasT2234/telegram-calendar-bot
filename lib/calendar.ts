@@ -1,6 +1,7 @@
 import { google, calendar_v3 } from "googleapis";
 
 const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
+const TIMEZONE = process.env.TIMEZONE || "UTC";
 
 function getCalendarClient() {
   // Trim defensively — env values pasted through a dashboard UI can pick up
@@ -74,8 +75,8 @@ export async function createEvent(input: EventInput): Promise<EventSummary> {
         summary: input.summary,
         description: input.description,
         location: input.location,
-        start: { dateTime: input.startISO },
-        end: { dateTime: input.endISO },
+        start: { dateTime: input.startISO, timeZone: TIMEZONE },
+        end: { dateTime: input.endISO, timeZone: TIMEZONE },
         recurrence: input.recurrence,
       },
     });
@@ -123,8 +124,8 @@ export async function updateEvent(input: {
       summary: input.summary,
       description: input.description,
       location: input.location,
-      start: input.startISO ? { dateTime: input.startISO } : undefined,
-      end: input.endISO ? { dateTime: input.endISO } : undefined,
+      start: input.startISO ? { dateTime: input.startISO, timeZone: TIMEZONE } : undefined,
+      end: input.endISO ? { dateTime: input.endISO, timeZone: TIMEZONE } : undefined,
     },
   });
   return toSummary(data);
