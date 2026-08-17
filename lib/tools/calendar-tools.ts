@@ -9,15 +9,29 @@ const isoWithOffset = z
   );
 
 export const createEventTool = tool({
-  description: "Create a new event on the user's Google Calendar.",
+  description:
+    "Create a new event on the user's Google Calendar. For anything that repeats " +
+    "(\"every week\", \"daily\", \"every Monday for 12 weeks\"), set recurrenceRule " +
+    "instead of calling this tool once per occurrence — one call creates the whole series.",
   inputSchema: z.object({
     summary: z.string().describe("Short event title"),
     description: z.string().optional(),
     location: z.string().optional(),
-    startISO: isoWithOffset,
-    endISO: isoWithOffset,
+    startISO: isoWithOffset.describe("Start of the first (or only) occurrence"),
+    endISO: isoWithOffset.describe("End of the first (or only) occurrence"),
+    recurrenceRule: z
+      .string()
+      .optional()
+      .describe(
+        "RFC 5545 RRULE line for a repeating event, e.g. 'RRULE:FREQ=WEEKLY;COUNT=12' " +
+          "or 'RRULE:FREQ=WEEKLY;UNTIL=20261215T000000Z'. Omit for a one-off event.",
+      ),
   }),
-  execute: async (input) => calendar.createEvent(input),
+  execute: async ({ recurrenceRule, ...input }) =>
+    calendar.createEvent({
+      ...input,
+      recurrence: recurrenceRule ? [recurrenceRule] : undefined,
+    }),
 });
 
 export const listEventsTool = tool({

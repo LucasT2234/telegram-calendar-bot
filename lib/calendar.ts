@@ -37,6 +37,10 @@ export interface EventInput {
   location?: string;
   startISO: string;
   endISO: string;
+  // RFC 5545 RRULE lines, e.g. ["RRULE:FREQ=WEEKLY;COUNT=12"]. Lets a single
+  // request cover a whole series instead of one createEvent call per
+  // occurrence, which used to blow through the agent's tool-step budget.
+  recurrence?: string[];
 }
 
 export interface EventSummary {
@@ -72,6 +76,7 @@ export async function createEvent(input: EventInput): Promise<EventSummary> {
         location: input.location,
         start: { dateTime: input.startISO },
         end: { dateTime: input.endISO },
+        recurrence: input.recurrence,
       },
     });
     return toSummary(data);
