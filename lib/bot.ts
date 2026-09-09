@@ -37,15 +37,16 @@ bot.onDirectMessage(async (thread, message) => {
   try {
     console.log("[handler] start", { text: message.text });
 
-    await withTimeout(thread.startTyping(), 8_000, "startTyping");
-    console.log("[handler] typing sent");
-
-    const { messages: recent } = await withTimeout(
-      thread.adapter.fetchMessages(thread.id, { limit: 20 }),
-      8_000,
-      "fetchMessages",
-    );
-    console.log("[handler] fetched history", { count: recent.length });
+    // Independent Telegram API calls — run in parallel instead of back-to-back.
+    const [, { messages: recent }] = await Promise.all([
+      withTimeout(thread.startTyping(), 8_000, "startTyping"),
+      withTimeout(
+        thread.adapter.fetchMessages(thread.id, { limit: 10 }),
+        8_000,
+        "fetchMessages",
+      ),
+    ]);
+    console.log("[handler] typing sent, fetched history", { count: recent.length });
 
     const history = await toAiMessages(recent);
     console.log("[handler] converted to ai messages", { count: history.length });
