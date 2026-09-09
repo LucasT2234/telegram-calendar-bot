@@ -1,7 +1,7 @@
 import { waitUntil } from "@vercel/functions";
 import { bot } from "@/lib/bot";
 
-// Backstop above the agent's own 55s timeout so a genuinely wedged request
+// Backstop above the agent's own 65s timeout so a genuinely wedged request
 // (e.g. hanging before the agent call even starts) can't hold the per-thread
 // lock for the platform's full 300s default.
 export const maxDuration = 90;

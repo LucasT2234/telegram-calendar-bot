@@ -33,6 +33,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 bot.onDirectMessage(async (thread, message) => {
+  const handlerStart = Date.now();
   try {
     console.log("[handler] start", { text: message.text });
 
@@ -50,13 +51,23 @@ bot.onDirectMessage(async (thread, message) => {
     console.log("[handler] converted to ai messages", { count: history.length });
 
     const agent = createCalendarAgent();
-    const result = await agent.generate({ messages: history, timeout: 55_000 });
-    console.log("[handler] agent done", { text: result.text });
+    const agentStart = Date.now();
+    // 65s here, not 90s (the route's maxDuration): needs enough margin below
+    // the platform's hard cutoff for typing/fetchMessages overhead plus a
+    // graceful catch — hitting maxDuration kills the function outright with
+    // no chance to reply, instead of falling into the catch block below.
+    const result = await agent.generate({ messages: history, timeout: 65_000 });
+    console.log("[handler] agent done", {
+      text: result.text,
+      elapsedMs: Date.now() - agentStart,
+    });
 
     await thread.post(result.text || "Done.");
     console.log("[handler] reply posted");
   } catch (error) {
-    console.error("[handler] error:", error);
+    console.error("[handler] error:", error, {
+      elapsedMs: Date.now() - handlerStart,
+    });
     await thread.post(
       "Something went wrong handling that — mind trying again?",
     );
